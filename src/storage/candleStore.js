@@ -1,16 +1,18 @@
+const Denque = require('denque');
+
 const marketData = {
 
-    "1m": [],
+    "1m": new Denque(),
 
-    "5m": [],
+    "5m": new Denque(),
 
-    "15m": [],
+    "15m": new Denque(),
 
-    "1h": [],
+    "1h": new Denque(),
 
-    "4h": [],
+    "4h": new Denque(),
 
-    "1d": [],
+    "1d": new Denque(),
 };
 
 module.exports = {

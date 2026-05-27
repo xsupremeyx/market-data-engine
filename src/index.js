@@ -5,12 +5,26 @@ const { alignTimestamp } = require('./utils/alignTimestamp');
 
 const { updateTimeframe } = require('./utils/updateTimeframe');
 const { startBinanceWebSocket } = require('./services/binance.websocket');
-
+const { enforceLimit } = require('./utils/enforceLimit');
 
 function sleep(ms){
     return new Promise((resolve) =>
         setTimeout(resolve, ms)
     );
+}
+
+const limits = {
+        "1m": 100000,
+
+        "5m": 50000,
+
+        "15m": 25000,
+
+        "1h": 10000,
+
+        "4h": 5000,
+
+        "1d": 2000,
 }
 
 async function loadHistoricalCandles(){
@@ -35,7 +49,15 @@ async function loadHistoricalCandles(){
             close: Number(candle[4]),
             volume: Number(candle[5]),
         }));
-        marketData["1m"].push(...formattedCandles);
+        for(const candle of formattedCandles){
+            marketData["1m"].push(candle);
+        }
+        enforceLimit(
+            marketData["1m"],
+            limits["1m"]
+        );
+
+
         fetchedCandles += formattedCandles.length;
         console.log(`Fetched ${fetchedCandles} candles so far...`);
         const lastCandle = formattedCandles[formattedCandles.length - 1];
@@ -45,11 +67,74 @@ async function loadHistoricalCandles(){
 
     }
 
-    marketData['5m'] = aggregateCandles(marketData["1m"], 5); 
-    marketData['15m'] = aggregateCandles(marketData["1m"], 15); 
-    marketData['1h'] = aggregateCandles(marketData["1m"], 60); 
-    marketData['4h'] = aggregateCandles(marketData["1m"], 240); 
-    marketData['1d'] = aggregateCandles(marketData["1m"], 1440); 
+    marketData['5m'].clear();
+    marketData['15m'].clear();
+    marketData['1h'].clear();
+    marketData['4h'].clear();
+    marketData['1d'].clear();
+
+    const candles1mArray = marketData["1m"].toArray();
+
+    for(const candle of aggregateCandles(
+        candles1mArray,
+        5
+    )){
+        marketData['5m'].push(candle);
+    }
+
+    enforceLimit(
+        marketData["5m"],
+        limits["5m"]
+    );
+
+    for(const candle of aggregateCandles(
+        candles1mArray,
+        15
+    )){
+        marketData['15m'].push(candle);
+    }
+
+    enforceLimit(
+        marketData["15m"],
+        limits["15m"]
+    );
+
+    for(const candle of aggregateCandles(
+        candles1mArray,
+        60
+    )){
+        marketData['1h'].push(candle);
+    }
+
+    enforceLimit(
+        marketData["1h"],
+        limits["1h"]
+    );
+
+    for(const candle of aggregateCandles(
+        candles1mArray,
+        240
+    )){
+        marketData['4h'].push(candle);
+    }
+
+    enforceLimit(
+        marketData["4h"],
+        limits["4h"]
+    );
+
+    for(const candle of aggregateCandles(
+        candles1mArray,
+        1440
+    )){
+        marketData['1d'].push(candle);
+    }
+
+    enforceLimit(
+        marketData["1d"],
+        limits["1d"]
+    );
+
     console.log('\nMarket Data Summary:\n');
 
     for(const timeframe in marketData){
@@ -63,7 +148,9 @@ async function loadHistoricalCandles(){
             console.log(
                 `First: ${
                     new Date(
-                        marketData[timeframe][0].time
+                        marketData[timeframe]
+                            .peekFront()
+                            .time
                     ).toISOString()
                 }`
             );
@@ -71,9 +158,9 @@ async function loadHistoricalCandles(){
             console.log(
                 `Last: ${
                     new Date(
-                        marketData[timeframe][
-                            marketData[timeframe].length - 1
-                        ].time
+                        marketData[timeframe]
+                            .peekBack()
+                            .time
                     ).toISOString()
                 }`
             );
@@ -114,10 +201,7 @@ async function main(){
             `[LIVE] ${new Date(candle.time).toISOString()} Close: ${candle.close}`
         );
 
-        const last1m =
-            marketData["1m"][
-                marketData["1m"].length - 1
-            ];
+        const last1m = marketData["1m"].peekBack();
 
         if(
             !last1m ||
@@ -125,6 +209,7 @@ async function main(){
         ){
 
             marketData["1m"].push(candle);
+            enforceLimit(marketData["1m"], limits["1m"]);
 
             for(const timeframe in timeframeConfig){
 
@@ -135,6 +220,10 @@ async function main(){
                     candle,
 
                     timeframeConfig[timeframe]
+                );
+                enforceLimit(marketData[timeframe],
+
+                    limits[timeframe]
                 );
             }
         }

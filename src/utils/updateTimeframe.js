@@ -12,9 +12,7 @@ function updateTimeframe(
     );
 
     const lastCandle =
-        timeframeCandles[
-            timeframeCandles.length - 1
-        ];
+        timeframeCandles.peekBack();
 
     if(
         !lastCandle ||
