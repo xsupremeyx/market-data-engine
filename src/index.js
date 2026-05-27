@@ -2,7 +2,10 @@ const { fetchCandles } = require('./services/binance.service');
 const { marketData } = require('./storage/candleStore');
 const { aggregateCandles } = require('./utils/aggregateCandles');
 const { alignTimestamp } = require('./utils/alignTimestamp');   
+
 const { updateTimeframe } = require('./utils/updateTimeframe');
+const { startBinanceWebSocket } = require('./services/binance.websocket');
+
 
 function sleep(ms){
     return new Promise((resolve) =>
@@ -78,75 +81,81 @@ async function loadHistoricalCandles(){
             console.log('---');
         }
     }
-
-    console.log('\nSimulating new 1m candle...\n');
-
-    const simulatedCandle = {
-
-        time:
-            marketData["1m"][
-                marketData["1m"].length - 1
-            ].time + 60000,
-
-        open: 77000,
-
-        high: 77100,
-
-        low: 76950,
-
-        close: 77050,
-
-        volume: 12,
-    };
-
-    marketData["1m"].push(
-        simulatedCandle
-    );
-
-    updateTimeframe(
-        marketData["5m"],
-        simulatedCandle,
-        5
-    );
-
-    updateTimeframe(
-        marketData["15m"],
-        simulatedCandle,
-        15
-    );
-
-    updateTimeframe(
-        marketData["1h"],
-        simulatedCandle,
-        60
-    );
-
-    updateTimeframe(
-        marketData["4h"],
-        simulatedCandle,
-        240
-    );
-
-    updateTimeframe(
-        marketData["1d"],
-        simulatedCandle,
-        1440
-    );
-
-    console.log(
-        'Updated latest 5m candle:',
-        marketData["5m"][
-            marketData["5m"].length - 1
-        ]
-    );
-
-    console.log(
-        'Updated latest 15m candle:',
-        marketData["15m"][
-            marketData["15m"].length - 1
-        ]
-    );
-
 }
 
-loadHistoricalCandles();
+async function main(){
+
+    await loadHistoricalCandles();
+
+    console.log(
+        'Starting live websocket stream...'
+    );
+
+    const timeframeConfig = {
+
+            "5m": 5,
+
+            "15m": 15,
+
+            "1h": 60,
+
+            "4h": 240,
+
+            "1d": 1440,
+    };
+
+    startBinanceWebSocket((candle) => {
+
+        if(!candle.isClosed){
+            return;
+        }
+
+        console.log(
+            `[LIVE] ${new Date(candle.time).toISOString()} Close: ${candle.close}`
+        );
+
+        const last1m =
+            marketData["1m"][
+                marketData["1m"].length - 1
+            ];
+
+        if(
+            !last1m ||
+            last1m.time !== candle.time
+        ){
+
+            marketData["1m"].push(candle);
+
+            for(const timeframe in timeframeConfig){
+
+                updateTimeframe(
+
+                    marketData[timeframe],
+
+                    candle,
+
+                    timeframeConfig[timeframe]
+                );
+            }
+        }
+
+        console.log(
+            '1m candles:',
+            marketData["1m"].length
+        );
+
+        console.log(
+            `Closed 1m candle: ${
+                candle.close
+            }`
+        );
+        console.log(
+            `5m candles: ${
+                marketData["5m"].length
+            }`
+        );
+
+    });
+}
+
+main();
