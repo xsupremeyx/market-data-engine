@@ -1,5 +1,18 @@
-const candles1m = [];
+const marketData = {
+
+    "1m": [],
+
+    "5m": [],
+
+    "15m": [],
+
+    "1h": [],
+
+    "4h": [],
+
+    "1d": [],
+};
 
 module.exports = {
-    candles1m,
-}
+    marketData,
+};
