@@ -349,20 +349,11 @@ Maintains exchange-correct timeframe boundaries.
 ✅ Duplicate candle protection  
 ✅ UTC-aligned candle generation  
 ✅ Realtime higher timeframe updates  
-
 ---
 
 # Next Planned Features
 
-- Demand/Supply Zone Detection
-- TradingView-style frontend
 - Persistence layer
-- Multi-symbol support
-- Backtesting engine
-- Indicator system
-- Zone ranking engine
-
----
 
 # Example Output
 
@@ -395,11 +386,3 @@ with:
 - higher timeframe generation
 
 ---
-
-# Author Notes
-
-This project was built as a learning-focused market infrastructure engine emphasizing:
-- correct architecture
-- realtime processing
-- scalable data flow
-- professional aggregation concepts
