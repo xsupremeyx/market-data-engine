@@ -2,7 +2,7 @@ const axios = require('axios');
 
 const BASE_URL = 'https://api.binance.com';
 
-async function fetchCandles(symbol, interval, limit = 1000){
+async function fetchCandles(symbol, interval, limit = 1000, startTime){
     try{
         const response = await axios.get(
             `${BASE_URL}/api/v3/klines`,
@@ -11,6 +11,7 @@ async function fetchCandles(symbol, interval, limit = 1000){
                     symbol,
                     interval,
                     limit,
+                    startTime,
                 },
             }
         );
