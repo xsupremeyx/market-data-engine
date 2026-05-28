@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>USDJPY Chart</title>
+
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+
+    <style>
+
+        body{
+
+            margin:0;
+
+            background:#0d1117;
+
+            color:white;
+
+            font-family:Arial;
+        }
+
+        #toolbar{
+
+            display:flex;
+
+            gap:10px;
+
+            padding:10px;
+
+            background:#161b22;
+
+            border-bottom:1px solid #333;
+        }
+
+        button{
+
+            background:#21262d;
+
+            color:white;
+
+            border:none;
+
+            padding:8px 14px;
+
+            cursor:pointer;
+
+            border-radius:6px;
+        }
+
+        button:hover{
+
+            background:#30363d;
+        }
+
+        #info{
+
+            padding:10px;
+
+            background:#111827;
+
+            border-bottom:1px solid #333;
+
+            font-size:14px;
+        }
+
+        #chart{
+
+            width:100vw;
+
+            height:calc(100vh - 100px);
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div id="toolbar">
+
+    <button onclick="loadCandles('1m')">1m</button>
+
+    <button onclick="loadCandles('5m')">5m</button>
+
+    <button onclick="loadCandles('15m')">15m</button>
+
+    <button onclick="loadCandles('1h')">1h</button>
+
+    <button onclick="loadCandles('4h')">4h</button>
+
+    <button onclick="loadCandles('1d')">1d</button>
+
+</div>
+
+<div id="info">
+
+    Hover candle to see OHLC info
+
+</div>
+
+<div id="chart"></div>
+
+<script>
+
+const chart =
+    LightweightCharts.createChart(
+
+        document.getElementById('chart'),
+
+        {
+
+            layout: {
+
+                background: {
+                    color:'#0d1117'
+                },
+
+                textColor:'#DDD'
+            },
+
+            grid: {
+
+                vertLines: {
+                    color:'#222'
+                },
+
+                horzLines: {
+                    color:'#222'
+                }
+            },
+
+            width:window.innerWidth,
+
+            height:window.innerHeight - 100,
+
+            crosshair: {
+
+                mode:
+                    LightweightCharts.CrosshairMode.Normal
+            },
+
+            timeScale: {
+
+                timeVisible:true,
+
+                secondsVisible:false
+            }
+        }
+    );
+
+const candleSeries =
+    chart.addSeries(
+        LightweightCharts.CandlestickSeries,
+
+        {
+
+            upColor:'#26a69a',
+
+            downColor:'#ef5350',
+
+            borderVisible:false,
+
+            wickUpColor:'#26a69a',
+
+            wickDownColor:'#ef5350',
+        }
+    );
+let currentTimeframe = '5m';
+
+async function loadCandles(timeframe){
+    currentTimeframe = timeframe;
+    const response =
+        await fetch(`/candles/${timeframe}`);
+
+    const candles =
+        await response.json();
+
+    candleSeries.setData(candles);
+}
+
+chart.subscribeCrosshairMove(param => {
+
+    if(
+        !param.time ||
+        param.point === undefined
+    ){
+        return;
+    }
+
+    const data =
+        param.seriesData.get(candleSeries);
+
+    if(!data){
+        return;
+    }
+
+    const date =
+        new Date(
+            param.time * 1000
+        ).toISOString();
+
+    document.getElementById('info').innerHTML = `
+
+        UTC: ${date}
+
+        | Open: ${data.open}
+
+        | High: ${data.high}
+
+        | Low: ${data.low}
+
+        | Close: ${data.close}
+    `;
+});
+
+window.addEventListener('resize', () => {
+
+    chart.applyOptions({
+
+        width:window.innerWidth,
+
+        height:window.innerHeight - 100
+    });
+});
+
+loadCandles('5m').then(() => {
+
+    chart.timeScale().fitContent();
+});
+
+setInterval(() => {
+
+    loadCandles(currentTimeframe);
+
+}, 30000);
+</script>
+
+</body>
+</html>

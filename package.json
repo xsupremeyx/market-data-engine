@@ -1,10 +1,11 @@
 {
   "name": "market-data-engine",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "engine": "node --watch src/index.js",
+    "chart": "node --watch chart-server.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +16,7 @@
     "axios": "^1.16.1",
     "denque": "^2.1.0",
     "dotenv": "^17.4.2",
-    "ws": "^8.21.0"
+    "express": "^5.2.1",
+    "lightweight-charts": "^5.2.0"
   }
 }
